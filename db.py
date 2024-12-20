@@ -1,2 +1,2 @@
-stores = {"A":1}
+stores = {}
 items = {}

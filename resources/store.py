@@ -28,7 +28,7 @@ class Store(MethodView):
 class StoreList(MethodView):
     def get(self):
         try:
-            return {"stores": stores.values()}
+            return {"stores": list(stores.values())}
         except KeyError:
             abort(404, message="Store Not Found")
 
