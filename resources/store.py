@@ -3,8 +3,10 @@ import uuid
 from flask import request
 from flask_smorest import abort, Blueprint
 from flask.views import MethodView
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from db import stores
+from db import  db
+from models import StoreModel
 from schemas import StoreSchema
 
 blp = Blueprint("stores", __name__, description="Operations on Stores")
@@ -14,17 +16,13 @@ class Store(MethodView):
 
     @blp.response(200,StoreSchema)
     def get(self, store_id):
-        try:
-            return stores[store_id]
-        except KeyError:
-            abort(404, message="Store not found.")
+        return StoreModel.query.get_or_404(store_id)
 
     def delete(self, store_id):
-        try:
-            stores.pop(store_id)
-            return {f'message":f"Item {store_id} Deleted Successfully', 200}
-        except KeyError:
-            abort(404, message="Store Does Not Exists")
+        store = StoreModel.query.get_or_404(store_id)
+        db.session.delete()
+        db.session.commit()
+        return{"message":"Store Deleted"}
 
 
 @blp.route("/store")
@@ -33,21 +31,26 @@ class StoreList(MethodView):
 
     @blp.response(200,StoreSchema(many=True))
     def get(self):
-        try:
-            return stores.values()
-        except KeyError:
-            abort(404, message="Store Not Found")
+        return StoreModel.query.all()
 
     @blp.arguments(StoreSchema)
     @blp.response(201,StoreSchema)
     def post(self,store_data):
 
+        store = StoreModel(**store_data)
 
-        for store in stores.values():
-            if (store["name"] == store_data["name"]):
-                abort(403, messgae="Store ALready Exists")
+        try:
+            db.session.add(store)
+            db.session.commit()
+        except IntegrityError:
+            abort(
+                400,
+                message="A store with that name already exists.",
+            )
+        except SQLAlchemyError:
+            abort(500, message="An error occurred creating the store.")
 
-        store_id = uuid.uuid4().hex
-        store = {**store_data, "id": store_id}
-        stores[store_id] = store
         return store
+
+
+
