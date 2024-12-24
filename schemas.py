@@ -31,22 +31,20 @@ class StoreSchema(PlainStoreSchema):
     tags = fields.List(fields.Nested(PlainTagSchema(),dump_only=True))
 
 
-
-
-class StoreSchema(Schema):
-    id = fields.Str(dump_only=True)
-    name = fields.Str(required=True)
-
-
 class TagSchema(PlainTagSchema):
     store_id = fields.Int(load_only=True)
     store = fields.Nested(PlainStoreSchema(),dump_only=True)
 
 
-class TagandItemSchema(Schema):
+class TagAndItemSchema(Schema):
     message = fields.Str()
     items = fields.Nested(ItemSchema)
     tags = fields.Nested(TagSchema)
+
+class UserSchema(Schema):
+    id = fields.Int(dump_only=True)
+    usename = fields.Str(required=True)
+    password = fields.Str(required=True,load_only=True)
 
 
 

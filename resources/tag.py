@@ -1,11 +1,11 @@
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
-from pyexpat.errors import messages
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from db import db
-from models import TagModel, StoreModel
-from schemas import PlainTagSchema, TagSchema
+from models import TagModel, StoreModel,ItemModel
+from schemas import PlainTagSchema, TagSchema,TagAndItemSchema
 
 blp = Blueprint("tags", __name__, description="Operations on Tag")
 
@@ -17,8 +17,28 @@ class Tags(MethodView):
         tag = TagModel.query.get_or_404(tag_id)
         return tag
 
+    @blp.response(
+        202,
+        description="Deletes a tag if no item is tagged with it.",
+        example={"message": "Tag deleted."},
+    )
+    @blp.alt_response(404, description="Tag not found.")
+    @blp.alt_response(
+        400,
+        description="Returned if the tag is assigned to one or more items. In this case, the tag is not deleted.",
+    )
     def delete(self, tag_id):
-        pass
+        tag = TagModel.query.get_or_404(tag_id)
+
+        if not tag.items:
+            db.session.delete(tag)
+            db.session.commit()
+            return {"message":"Tag Deleted"}
+        abort(404,message = "Item has been linked to this tag, Please Delete the link to continue")
+
+
+
+
 
 
 @blp.route("/store/<string:store_id>/tag")
@@ -45,4 +65,35 @@ class TagInStore(MethodView):
         return tag
 
 
+@blp.route("/item/<string:item_id>/tag/<string:tag_id>")
+class LinkTagstoItem(MethodView):
 
+    @blp.response(200,TagSchema)
+    def post(self,item_id,tag_id):
+
+        item = ItemModel.query.get_or_404(item_id)
+        tag = ItemModel.query.get_or_404(tag_id)
+
+        item.tags.append(tag)
+        try:
+            db.session.add(item)
+            db.session.commit()
+        except SQLAlchemyError:
+            abort(500,message = "An error occurred while inserting the tag.")
+
+        return tag
+
+
+    def delete(self,item_id,tag_id):
+        item = ItemModel.query.get_or_404(item_id)
+        tag = ItemModel.query.get_or_404(tag_id)
+
+        item.tags.remove(tag)
+
+        try:
+            db.session.add(item)
+            db.session.commit()
+        except SQLAlchemyError:
+            abort(500,message = "An error occurred while deleting the tag.")
+
+        return {"message":"Item removed from tag","item":item,"tag":tag}
