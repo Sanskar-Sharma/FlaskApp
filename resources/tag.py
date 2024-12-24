@@ -1,5 +1,8 @@
 from flask_smorest import Blueprint, abort
 from flask.views import MethodView
+from pyexpat.errors import messages
+from sqlalchemy.exc import SQLAlchemyError
+
 from db import db
 from models import TagModel, StoreModel
 from schemas import PlainTagSchema, TagSchema
@@ -28,6 +31,18 @@ class TagInStore(MethodView):
 
     @blp.arguments(TagSchema)
     def post(self, tag_data, store_id):
-        if TagModel.query.filter(TagModel.store_id == store_id, TagModel.name == tag_data["Name"]):
-            tag = TagModel(**tag_data, store_id=store_id)
+        if TagModel.query.filter(TagModel.store_id == store_id, TagModel.name == tag_data["Name"]).first():
+            abort(http_status_code=401,messaga ="A tag with that name already exists in that store.")
+
+        tag = TagModel(**tag_data, store_id=store_id)
+
+        try:
+            db.session.add(tag)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            abort(400,message = str(e))
+
+        return tag
+
+
 

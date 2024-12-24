@@ -43,6 +43,13 @@ class TagSchema(PlainTagSchema):
     store = fields.Nested(PlainStoreSchema(),dump_only=True)
 
 
+class TagandItemSchema(Schema):
+    message = fields.Str()
+    items = fields.Nested(ItemSchema)
+    tags = fields.Nested(TagSchema)
+
+
+
 
 
 

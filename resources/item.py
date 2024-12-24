@@ -67,9 +67,4 @@ class Item(MethodView):
         except KeyError:
             abort(404, message="Item Does Not Exists")
 
-@blp.route("/item/<string:item_id>/tag/<string:item_id>")
-class ItemTag(MethodView):
-
-    def delete(self,item_id):
-        pass
 
